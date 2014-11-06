@@ -46,7 +46,7 @@ public class KafkaPersistWriter implements StreamsPersistWriter, Serializable {
 
     private KafkaConfiguration config;
 
-    private Producer<String, String> producer;
+    private Producer<String, Object> producer;
 
     public KafkaPersistWriter() {
        this(KafkaConfigurator.detectConfiguration(StreamsConfigurator.config.getConfig("kafka")));
@@ -67,7 +67,7 @@ public class KafkaPersistWriter implements StreamsPersistWriter, Serializable {
 
         ProducerConfig config = new ProducerConfig(props);
 
-        producer = new Producer<String, String>(config);
+        producer = new Producer<String, Object>(config);
 
         new Thread(new KafkaPersistWriterTask(this)).start();
     }
@@ -75,16 +75,11 @@ public class KafkaPersistWriter implements StreamsPersistWriter, Serializable {
     @Override
     public void write(StreamsDatum entry) {
 
-        try {
-            String text = mapper.writeValueAsString(entry);
+        String key = entry.getId() != null ? entry.getId() : GuidUtils.generateGuid("kafkawriter");
 
-            KeyedMessage<String, String> data = new KeyedMessage<String, String>(config.getTopic(), entry.getId(), text);
+        KeyedMessage<String, Object> data = new KeyedMessage<>(config.getTopic(), key, entry.getDocument());
 
-            producer.send(data);
-
-        } catch (JsonProcessingException e) {
-            LOGGER.warn("save: {}", e);
-        }// put
+        producer.send(data);
     }
 
     @Override

@@ -32,7 +32,7 @@ public class StreamsPartitioner implements Partitioner {
 
     public int partition(Object key, int a_numPartitions) {
         int partition = 0;
-        partition = key.hashCode() % a_numPartitions;
+
         return partition;
     }
 

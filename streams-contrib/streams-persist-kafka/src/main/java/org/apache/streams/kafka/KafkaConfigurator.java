@@ -18,7 +18,9 @@
 
 package org.apache.streams.kafka;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigRenderOptions;
 import org.apache.streams.config.StreamsConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,18 +32,18 @@ public class KafkaConfigurator {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(KafkaConfigurator.class);
 
+    private final static ObjectMapper mapper = new ObjectMapper();
+
     public static KafkaConfiguration detectConfiguration(Config kafka) {
-        String brokerlist = StreamsConfigurator.config.getString("kafka.metadata.broker.list");
-        String zkconnect = StreamsConfigurator.config.getString("kafka.zkconnect");
-        String topic = StreamsConfigurator.config.getString("kafka.topic");
-        String groupId = StreamsConfigurator.config.getString("kafka.groupid");
 
-        KafkaConfiguration kafkaConfiguration = new KafkaConfiguration();
+        KafkaConfiguration kafkaConfiguration = null;
 
-        kafkaConfiguration.setBrokerlist(brokerlist);
-        kafkaConfiguration.setZkconnect(zkconnect);
-        kafkaConfiguration.setTopic(topic);
-        kafkaConfiguration.setGroupId(groupId);
+        try {
+            kafkaConfiguration = mapper.readValue(kafka.root().render(ConfigRenderOptions.concise()), KafkaConfiguration.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOGGER.warn("Could not parse KafkaConfiguration");
+        }
 
         return kafkaConfiguration;
     }
