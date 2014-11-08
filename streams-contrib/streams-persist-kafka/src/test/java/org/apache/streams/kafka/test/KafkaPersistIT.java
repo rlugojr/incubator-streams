@@ -49,6 +49,7 @@ public class KafkaPersistIT {
     private KafkaConfiguration testConfiguration;
 
     private String testTopic = "testTopic";
+    private String testGroup = "testGroup";
 
     ConsolePersistReader reader = Mockito.mock(ConsolePersistReader.class);
     ConsolePersistWriter writer = Mockito.mock(ConsolePersistWriter.class);
@@ -68,6 +69,7 @@ public class KafkaPersistIT {
         testConfiguration.setBrokerlist(testKafkaCluster.getKafkaBrokerString());
         testConfiguration.setZkconnect(testKafkaCluster.getZkConnectString());
         testConfiguration.setTopic(testTopic);
+        testConfiguration.setGroupId(testGroup);
 
         ZkClient zkClient = new ZkClient(testKafkaCluster.getZkConnectString(), 1000, 1000, ZKStringSerializer$.MODULE$);
 
@@ -96,7 +98,7 @@ public class KafkaPersistIT {
 
         builder.newReadCurrentStream("stdin", reader);
         builder.addStreamsPersistWriter("writer", kafkaWriter, 1, "stdin");
-        builder.newPerpetualStream("reader", kafkaReader);
+        builder.newReadCurrentStream("reader", kafkaReader);
         builder.addStreamsPersistWriter("stdout", writer, 1, "reader");
 
         builder.start();
