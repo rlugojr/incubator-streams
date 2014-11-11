@@ -19,17 +19,18 @@
 package org.apache.streams.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.google.common.collect.Queues;
-import com.typesafe.config.Config;
 import kafka.consumer.Consumer;
 import kafka.consumer.ConsumerConfig;
+import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 import kafka.consumer.Whitelist;
 import kafka.javaapi.consumer.ConsumerConnector;
+import kafka.message.MessageAndMetadata;
 import kafka.serializer.StringDecoder;
 import kafka.utils.VerifiableProperties;
 import org.apache.streams.config.StreamsConfigurator;
-import org.apache.streams.core.DatumStatusCounter;
 import org.apache.streams.core.StreamsDatum;
 import org.apache.streams.core.StreamsPersistReader;
 import org.apache.streams.core.StreamsResultSet;
@@ -37,13 +38,14 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.streams.kafka.KafkaConfiguration;
-
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
+import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,7 +64,10 @@ public class KafkaPersistReader implements StreamsPersistReader, Serializable {
     private ConsumerConfig consumerConfig;
     private ConsumerConnector consumerConnector;
 
-    public List<KafkaStream<String, String>> inStreams;
+    public KafkaStream<String, String> stream;
+
+    private boolean isStarted = false;
+    private boolean isStopped = false;
 
     private ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -81,23 +86,27 @@ public class KafkaPersistReader implements StreamsPersistReader, Serializable {
 
     @Override
     public void startStream() {
-
-        for (final KafkaStream stream : inStreams) {
-            executor.submit(new KafkaPersistReaderTask(this, stream));
-        }
+        isStarted = true;
     }
 
     @Override
     public StreamsResultSet readCurrent() {
 
-        StreamsResultSet current;
-
-        synchronized( KafkaPersistReader.class ) {
-            current = new StreamsResultSet(Queues.newConcurrentLinkedQueue(persistQueue));
-            persistQueue.clear();
+        ConsumerIterator it = stream.iterator();
+        while (it.hasNext()) {
+            MessageAndMetadata item = it.next();
+            write(new StreamsDatum((String)item.message(), (String)item.key()));
         }
 
+        StreamsResultSet current;
+        current = new StreamsResultSet(Queues.newConcurrentLinkedQueue(persistQueue));
+        persistQueue.clear();
+
         return current;
+    }
+
+    private void write( StreamsDatum entry ) {
+        persistQueue.offer(entry);
     }
 
     @Override
@@ -112,28 +121,31 @@ public class KafkaPersistReader implements StreamsPersistReader, Serializable {
 
     @Override
     public boolean isRunning() {
-        return !executor.isShutdown() && !executor.isTerminated();
+        return isStarted && !isStopped;
     }
 
     @Override
     public void prepare(Object configurationObject) {
 
         Properties props = new Properties();
+
         props.put("zookeeper.connect", config.getZkconnect());
         props.put("group.id", "streams");
         props.put("zookeeper.session.timeout.ms", "1000");
         props.put("zookeeper.sync.time.ms", "200");
-        props.put("auto.commit.interval.ms", "1000");
+        props.put("auto.commit.interval.ms", "500");
         props.put("auto.offset.reset", "smallest");
+
+        VerifiableProperties vprops = new VerifiableProperties(props);
 
         consumerConfig = new ConsumerConfig(props);
 
         consumerConnector = Consumer.createJavaConsumerConnector(consumerConfig);
 
-        Whitelist topics = new Whitelist(config.getTopic());
-        VerifiableProperties vprops = new VerifiableProperties(props);
-
-        inStreams = consumerConnector.createMessageStreamsByFilter(topics, 1, new StringDecoder(vprops), new StringDecoder(vprops));
+        Map topicCountMap = new HashMap<String, Integer>();
+        topicCountMap.put(config.getTopic(), new Integer(1));
+        Map<String, List<KafkaStream<String,String>>> consumerMap = consumerConnector.createMessageStreams(topicCountMap, new StringDecoder(vprops), new StringDecoder(vprops));
+        stream = consumerMap.get(config.getTopic()).get(0);
 
         persistQueue = new ConcurrentLinkedQueue<>();
     }
@@ -141,5 +153,6 @@ public class KafkaPersistReader implements StreamsPersistReader, Serializable {
     @Override
     public void cleanUp() {
         consumerConnector.shutdown();
+        isStopped = true;
     }
 }

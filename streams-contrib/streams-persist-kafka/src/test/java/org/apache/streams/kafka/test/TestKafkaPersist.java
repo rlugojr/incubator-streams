@@ -10,12 +10,14 @@ import org.apache.streams.core.StreamsResultSet;
 import org.apache.streams.kafka.KafkaConfiguration;
 import org.apache.streams.kafka.KafkaPersistReader;
 import org.apache.streams.kafka.KafkaPersistWriter;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import scala.collection.JavaConversions;
 import scala.collection.Seq;
 
+import java.io.IOException;
 import java.util.Properties;
 
 /**
@@ -31,21 +33,29 @@ public class TestKafkaPersist {
     @Before
     public void prepareTest() {
 
-
         try {
             testKafkaCluster = new TestKafkaCluster();
         } catch (Throwable e ) {
             e.printStackTrace();
         }
 
+        String zkConnect = testKafkaCluster.getZkConnectString().replace("127.0.0.1", "localhost");
+        String kafkaBroker = testKafkaCluster.getKafkaBrokerString().replace("127.0.0.1", "localhost");
+
         testConfiguration = new KafkaConfiguration();
-        testConfiguration.setBrokerlist(testKafkaCluster.getKafkaBrokerString());
-        testConfiguration.setZkconnect(testKafkaCluster.getZkConnectString());
+        testConfiguration.setBrokerlist(kafkaBroker);
+        testConfiguration.setZkconnect(zkConnect);
         testConfiguration.setTopic(testTopic);
 
-        ZkClient zkClient = new ZkClient(testKafkaCluster.getZkConnectString(), 1000, 1000, ZKStringSerializer$.MODULE$);
+        ZkClient zkClient = new ZkClient(testConfiguration.getZkconnect(), 1000, 1000, ZKStringSerializer$.MODULE$);
 
         AdminUtils.createTopic(zkClient, testTopic, 1, 1, new Properties());
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ie) {
+            //Handle exception
+        }
     }
 
     @Test
@@ -55,7 +65,7 @@ public class TestKafkaPersist {
         assert(testKafkaCluster != null);
 
         KafkaPersistWriter testPersistWriter = new KafkaPersistWriter(testConfiguration);
-        testPersistWriter.prepare(null);
+        testPersistWriter.prepare(testConfiguration);
 
         try {
             Thread.sleep(1000);
@@ -77,13 +87,11 @@ public class TestKafkaPersist {
 
         KafkaPersistReader testPersistReader = new KafkaPersistReader(testConfiguration);
         try {
-            testPersistReader.prepare(null);
+            testPersistReader.prepare(testConfiguration);
         } catch( Throwable e ) {
             e.printStackTrace();
             Assert.fail();
         }
-
-        testPersistReader.startStream();
 
         try {
             Thread.sleep(1000);
@@ -97,5 +105,16 @@ public class TestKafkaPersist {
 
         assert(testResult.size() == 1);
 
+    }
+
+    @After
+    public void shutdownTest() {
+        try {
+            testKafkaCluster.stop();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            testKafkaCluster = null;
+        }
     }
 }

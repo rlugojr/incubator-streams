@@ -20,6 +20,8 @@ package org.apache.streams.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.typesafe.config.Config;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
@@ -31,6 +33,9 @@ import org.apache.streams.util.GuidUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Properties;
 import java.util.Queue;
@@ -42,11 +47,11 @@ public class KafkaPersistWriter implements StreamsPersistWriter, Serializable {
 
     protected volatile Queue<StreamsDatum> persistQueue;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private ObjectMapper mapper;
 
     private KafkaConfiguration config;
 
-    private Producer<String, Object> producer;
+    private Producer<String, String> producer;
 
     public KafkaPersistWriter() {
        this(KafkaConfigurator.detectConfiguration(StreamsConfigurator.config.getConfig("kafka")));
@@ -56,7 +61,25 @@ public class KafkaPersistWriter implements StreamsPersistWriter, Serializable {
         this.config = config;
     }
 
-    public void start() {
+    @Override
+    public void write(StreamsDatum entry) {
+
+        String key = entry.getId() != null ? entry.getId() : GuidUtils.generateGuid("kafkawriter");
+
+        Preconditions.checkArgument(Strings.isNullOrEmpty(key) == false);
+        Preconditions.checkArgument(entry.getDocument() instanceof String);
+        Preconditions.checkArgument(Strings.isNullOrEmpty((String)entry.getDocument()) == false);
+
+        KeyedMessage<String, String> data = new KeyedMessage<>(config.getTopic(), key, (String)entry.getDocument());
+
+        producer.send(data);
+    }
+
+    @Override
+    public void prepare(Object configurationObject) {
+
+        mapper = new ObjectMapper();
+
         Properties props = new Properties();
 
         props.put("metadata.broker.list", config.getBrokerlist());
@@ -67,26 +90,9 @@ public class KafkaPersistWriter implements StreamsPersistWriter, Serializable {
 
         ProducerConfig config = new ProducerConfig(props);
 
-        producer = new Producer<String, Object>(config);
+        producer = new Producer(config);
 
-        new Thread(new KafkaPersistWriterTask(this)).start();
-    }
-
-    @Override
-    public void write(StreamsDatum entry) {
-
-        String key = entry.getId() != null ? entry.getId() : GuidUtils.generateGuid("kafkawriter");
-
-        KeyedMessage<String, Object> data = new KeyedMessage<>(config.getTopic(), key, entry.getDocument());
-
-        producer.send(data);
-    }
-
-    @Override
-    public void prepare(Object configurationObject) {
         this.persistQueue  = new ConcurrentLinkedQueue<StreamsDatum>();
-
-        start();
 
     }
 

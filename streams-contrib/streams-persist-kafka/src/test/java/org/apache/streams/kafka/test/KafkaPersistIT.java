@@ -5,6 +5,11 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import javassist.bytecode.stackmap.TypeData;
 import kafka.admin.AdminUtils;
+import kafka.server.KafkaConfig;
+import kafka.server.KafkaServer;
+import kafka.utils.MockTime;
+import kafka.utils.TestUtils;
+import kafka.utils.Time;
 import kafka.utils.ZKStringSerializer$;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.streams.console.ConsolePersistReader;
@@ -16,6 +21,7 @@ import org.apache.streams.kafka.KafkaConfiguration;
 import org.apache.streams.kafka.KafkaPersistReader;
 import org.apache.streams.kafka.KafkaPersistWriter;
 import org.apache.streams.local.builders.LocalStreamBuilder;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,6 +30,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.powermock.api.mockito.PowerMockito;
+import scala.collection.JavaConversions;
+import scala.collection.Seq;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -37,6 +45,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.mock;
 
@@ -75,6 +84,12 @@ public class KafkaPersistIT {
 
         AdminUtils.createTopic(zkClient, testTopic, 1, 1, new Properties());
 
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException ie) {
+            //Handle exception
+        }
+
         PowerMockito.when(reader.readCurrent())
                 .thenReturn(
                         new StreamsResultSet(Queues.newConcurrentLinkedQueue(
@@ -103,9 +118,27 @@ public class KafkaPersistIT {
 
         builder.start();
 
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException ie) {
+            //Handle exception
+        }
+
         builder.stop();
 
         Mockito.verify(writer).write(testDatum);
 
     }
+
+    @After
+    public void shutdownTest() {
+        try {
+            testKafkaCluster.stop();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            testKafkaCluster = null;
+        }
+    }
+
 }
