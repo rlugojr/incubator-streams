@@ -93,6 +93,11 @@ public class TestKafkaPersist {
             Assert.fail();
         }
 
+<<<<<<< Updated upstream
+=======
+        testPersistReader.startStream();
+
+>>>>>>> Stashed changes
         try {
             Thread.sleep(1000);
         } catch (InterruptedException ie) {
@@ -105,6 +110,14 @@ public class TestKafkaPersist {
 
         assert(testResult.size() == 1);
 
+        StreamsDatum datum = testResult.iterator().next();
+
+        assert(datum.getDocument() instanceof String);
+
+        String datumString = (String) datum.getDocument();
+
+        assert(datumString.contains("dummy") && datumString.contains("true"));
+
     }
 
     @After
@@ -116,5 +129,6 @@ public class TestKafkaPersist {
         } finally {
             testKafkaCluster = null;
         }
+        
     }
 }

@@ -60,12 +60,18 @@ public class KafkaPersistWriter implements StreamsPersistWriter, Serializable {
     public KafkaPersistWriter(KafkaConfiguration config) {
         this.config = config;
     }
+    
+    public Queue<StreamsDatum> getPersistQueue() {
+        return persistQueue;
+    }
 
     @Override
     public void write(StreamsDatum entry) {
 
+        Preconditions.checkArgument(entry.getDocument() instanceof String);
+        
         String key = entry.getId() != null ? entry.getId() : GuidUtils.generateGuid("kafkawriter");
-
+        
         Preconditions.checkArgument(Strings.isNullOrEmpty(key) == false);
         Preconditions.checkArgument(entry.getDocument() instanceof String);
         Preconditions.checkArgument(Strings.isNullOrEmpty((String)entry.getDocument()) == false);
@@ -92,8 +98,9 @@ public class KafkaPersistWriter implements StreamsPersistWriter, Serializable {
 
         producer = new Producer(config);
 
+    @Override
+    public void prepare(Object configurationObject) {
         this.persistQueue  = new ConcurrentLinkedQueue<StreamsDatum>();
-
     }
 
     @Override

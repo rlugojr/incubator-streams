@@ -24,15 +24,13 @@ package org.apache.streams.kafka;
 import kafka.producer.Partitioner;
 import kafka.utils.VerifiableProperties;
 
-public class StreamsPartitioner implements Partitioner {
-
+public class StreamsPartitioner implements Partitioner<> {
     public StreamsPartitioner (VerifiableProperties props) {
 
     }
 
     public int partition(Object key, int a_numPartitions) {
         int partition = 0;
-
         return partition;
     }
 
