@@ -24,7 +24,7 @@ package org.apache.streams.kafka;
 import kafka.producer.Partitioner;
 import kafka.utils.VerifiableProperties;
 
-public class StreamsPartitioner implements Partitioner<> {
+public class StreamsPartitioner implements Partitioner {
     public StreamsPartitioner (VerifiableProperties props) {
 
     }

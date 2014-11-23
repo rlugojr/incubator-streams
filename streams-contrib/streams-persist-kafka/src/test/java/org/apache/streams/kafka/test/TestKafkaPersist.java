@@ -93,11 +93,8 @@ public class TestKafkaPersist {
             Assert.fail();
         }
 
-<<<<<<< Updated upstream
-=======
         testPersistReader.startStream();
 
->>>>>>> Stashed changes
         try {
             Thread.sleep(1000);
         } catch (InterruptedException ie) {

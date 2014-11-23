@@ -96,11 +96,9 @@ public class KafkaPersistWriter implements StreamsPersistWriter, Serializable {
 
         ProducerConfig config = new ProducerConfig(props);
 
-        producer = new Producer(config);
+        this.persistQueue = new ConcurrentLinkedQueue<StreamsDatum>();
 
-    @Override
-    public void prepare(Object configurationObject) {
-        this.persistQueue  = new ConcurrentLinkedQueue<StreamsDatum>();
+        producer = new Producer(config);
     }
 
     @Override
