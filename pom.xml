@@ -233,6 +233,7 @@
         <module>streams-contrib</module>
         <module>streams-runtimes</module>
         <module>streams-web</module>
+        <module>streams-verbs</module>
         <module>streams-monitoring</module>
     </modules>
 
