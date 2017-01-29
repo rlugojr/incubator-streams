@@ -439,28 +439,28 @@
                         <encoding>${project.build.sourceEncoding}</encoding>
                     </configuration>
                 </plugin>
-                <plugin>
-                    <artifactId>maven-remote-resources-plugin</artifactId>
-                    <version>${remote-resources.plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>process</goal>
-                            </goals>
-                            <configuration>
-                                <resourceBundles combine.children="append">
+                <!--<plugin>-->
+                    <!--<artifactId>maven-remote-resources-plugin</artifactId>-->
+                    <!--<version>${remote-resources.plugin.version}</version>-->
+                    <!--<executions>-->
+                        <!--<execution>-->
+                            <!--<goals>-->
+                                <!--<goal>process</goal>-->
+                            <!--</goals>-->
+                            <!--<configuration>-->
+                                <!--<resourceBundles combine.children="append">-->
                                     <!-- Will generate META-INF/DEPENDENCIES META-INF/LICENSE META-INF/NOTICE -->
-                                    <resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>
+                                    <!--<resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>-->
                                     <!-- Will generate META-INF/DISCLAIMER  -->
-                                    <resourceBundle>org.apache:apache-incubator-disclaimer-resource-bundle:1.1</resourceBundle>
-                                </resourceBundles>
-                                <properties>
-                                    <projectName>${notice.file.project.name}</projectName>
-                                </properties>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
+                                    <!--<resourceBundle>org.apache:apache-incubator-disclaimer-resource-bundle:1.1</resourceBundle>-->
+                                <!--</resourceBundles>-->
+                                <!--<properties>-->
+                                    <!--<projectName>${notice.file.project.name}</projectName>-->
+                                <!--</properties>-->
+                            <!--</configuration>-->
+                        <!--</execution>-->
+                    <!--</executions>-->
+                <!--</plugin>-->
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>${resources.plugin.version}</version>
