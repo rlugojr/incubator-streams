@@ -449,9 +449,9 @@
                             <!--</goals>-->
                             <!--<configuration>-->
                                 <!--<resourceBundles combine.children="append">-->
-                                    <!-- Will generate META-INF/DEPENDENCIES META-INF/LICENSE META-INF/NOTICE -->
+                                    <!--&lt;!&ndash; Will generate META-INF/DEPENDENCIES META-INF/LICENSE META-INF/NOTICE &ndash;&gt;-->
                                     <!--<resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>-->
-                                    <!-- Will generate META-INF/DISCLAIMER  -->
+                                    <!--&lt;!&ndash; Will generate META-INF/DISCLAIMER  &ndash;&gt;-->
                                     <!--<resourceBundle>org.apache:apache-incubator-disclaimer-resource-bundle:1.1</resourceBundle>-->
                                 <!--</resourceBundles>-->
                                 <!--<properties>-->
